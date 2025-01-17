@@ -1,0 +1,96 @@
+package Controller;
+
+import Conecction.ConecctionMongo;
+import View.OlvidoContraseña;
+import javax.swing.JOptionPane;
+import org.bson.Document;
+import Model.ModeloOlvidoContraseña;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class ControladorOlvidoContraseña implements ActionListener {
+
+    private String email, newPassword, newPasswordC;
+
+    OlvidoContraseña olvidoContraseña = new OlvidoContraseña();
+    ConecctionMongo conecctionMongo = new ConecctionMongo();
+    ModeloOlvidoContraseña modeloOlvidoContraseña = new ModeloOlvidoContraseña(email, newPassword, newPasswordC);
+
+    public ControladorOlvidoContraseña(String email, String newPassword, String newPasswordC) {
+        this.email = email;
+        this.newPassword = newPassword;
+        this.newPasswordC = newPasswordC;
+        //CREAMOS EVENTOS PARA LOS BOTONES
+        this.olvidoContraseña.btnconfirmPassword.addActionListener(this);
+        this.olvidoContraseña.btnExit.addActionListener(this);
+    }
+
+    public void recoverPassword(){
+        
+    }
+    
+    public void recuperarContraseña() {
+        // MOSTRAMOS UN PANEL EN EL CUAL COLOCAREMOS EL CORREO PARA PODER ACCEDER A RECUPERAR LA CONTRASEÑA
+        email = JOptionPane.showInputDialog(olvidoContraseña, "Ingrese su correo:");
+        // VALIDAMOS QUE EL CORREO NO SEA NULO O ESTE VACIO
+        if (email == null || email.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(olvidoContraseña, "El correo no puede estar vacia", "Error", JOptionPane.ERROR_MESSAGE);
+            //vistaI.setVisible(true);
+        }
+
+        // CREAMOS UN FILTRO PARA PODER BUSCAR POR EL CORREO
+        Document filtro = new Document("Correo", email.trim());
+
+        conecctionMongo.setNameCollection("clientes");
+        Document resultado = conecctionMongo.findDocument(filtro);
+
+        // VERIFICAMOS SI EL CORREO EXISTE EN LA BASE DE DATOS
+        if (resultado != null) {
+            // EN CASO DE QUE EL CORREO EXISTA LE PREGUNTAREMOS AL USUARIO SI DESEA ACTUALIZAR LA CONTRASEÑA
+            int respuesta = JOptionPane.showConfirmDialog(olvidoContraseña, "Correo encontrado, ¿Deseas recuperar tu contraseña?", "Recupera tu contraseña", JOptionPane.YES_NO_OPTION);
+
+            // SI EL CLIENTE SELECCIONA "SI", SE MUESTRA LLA INTERFAZ PARA RECUPERAR LA CONTRASEÑA
+            if (respuesta == JOptionPane.YES_OPTION) {
+                //MUESTRA EL PANEL DE LA RECUPERACION DE LA CONTRASEÑA
+                olvidoContraseña.setVisible(true);
+
+                    // Obtener las contraseñas ingresadas
+                    String nuevaContraseña = new String(olvidoContraseña.pasnewPassword.getPassword());
+                    String confirmarContraseña = new String(olvidoContraseña.pasnewPasswordC.getPassword());
+
+                    // Validar las contraseñas
+                    modeloOlvidoContraseña.validatePasswords();
+
+                    // Si las contraseñas son válidas, se actualiza en la base de datos
+                    resultado.put("password", newPassword); // Actualiza el campo "password" con la nueva contraseña
+
+                    // Guardar el documento con la nueva contraseña
+                    boolean actualizado = conecctionMongo.updateDocument(filtro, resultado);
+
+                    if (actualizado) {
+                        JOptionPane.showMessageDialog(olvidoContraseña, "La contraseña se actualizo correctamente", "Exito", JOptionPane.INFORMATION_MESSAGE);
+                        olvidoContraseña.setVisible(false); // Cerrar la ventana de recuperación
+                        //vistaI.setVisible(true);
+                    } else {
+                        JOptionPane.showMessageDialog(olvidoContraseña, "La contraseña no se puedo actualizar", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+
+            }
+        } else {
+            JOptionPane.showMessageDialog(olvidoContraseña, "El correo no se encontro en la base de datos", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    public void Exit(){
+        olvidoContraseña.setVisible(false);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if(e.getSource() ==  olvidoContraseña.btnconfirmPassword){
+            recoverPassword();
+        }else if(e.getSource() == olvidoContraseña.btnExit){
+            Exit();
+        }
+    }
+}
