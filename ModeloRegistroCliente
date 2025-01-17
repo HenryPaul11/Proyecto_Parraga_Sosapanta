@@ -1,0 +1,84 @@
+package Model;
+
+import View.RegistroCliente;
+
+public class ModeloRegistrocliente extends Person {
+
+    private String numPhone, passwordC;
+    private int age;
+    //CREAMOS UN OBJETO PARA ACCEDER A LAS ETIQUETAS DE EL REGISTRO AL CLIENTE
+    RegistroCliente registroCliente = new RegistroCliente();
+
+    public ModeloRegistrocliente(String numPhone, String passwordC, int age, String email, String password, String dni) {
+        super(email, password, dni);
+        this.numPhone = numPhone;
+        this.passwordC = passwordC;
+        this.age = age;
+    }
+
+    public String getNumPhone() {
+        return numPhone;
+    }
+
+    public void setNumPhone(String numPhone) {
+        this.numPhone = numPhone;
+    }
+
+    public String getPasswordC() {
+        return passwordC;
+    }
+
+    public void setPasswordC(String passwordC) {
+        this.passwordC = passwordC;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public boolean Validate() {
+        boolean band = true;
+        if (getNumPhone().length() != 10) {
+            registroCliente.lblerrnumberPhone.setText("El numero de telefono debe contener 10 caracteres");
+            registroCliente.lblerrnumberPhone.setVisible(true);
+            band = false;
+        } else {
+            registroCliente.lblerrnumberPhone.setVisible(false);
+        }
+        if (getPassword().trim().isEmpty()) {
+            registroCliente.lblerrPassword.setText("La contraseña no debe estar vacia");
+            registroCliente.lblerrPassword.setVisible(true);
+            band = false;
+        } else {
+            registroCliente.lblerrPassword.setVisible(false);
+        }
+        if (getPassword().equals(getPasswordC())) {
+            registroCliente.lblerrPasswordC.setText("Las contraseñas deben coincidir");
+            registroCliente.lblerrPasswordC.setVisible(true);
+            band = false;
+        } else {
+            registroCliente.lblerrPasswordC.setVisible(false);
+        }
+        if (getAge() < 18) {
+            registroCliente.lblerrAge.setText("Debe ser mayor de 18 años para poder registrarse");
+            registroCliente.lblerrAge.setVisible(true);
+            band = false;
+        } else {
+            registroCliente.lblerrAge.setVisible(false);
+        }
+        if (getDni().length() != 10) {
+            registroCliente.lblerrDni.setText("La contraseña debe contener 10 caracteres");
+            registroCliente.lblerrDni.setVisible(true);
+            band = false;
+        } else {
+            registroCliente.lblerrDni.setVisible(false);
+        }
+        return false;
+    }
+
+}
