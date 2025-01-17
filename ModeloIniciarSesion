@@ -1,0 +1,41 @@
+package Model;
+
+import org.bson.Document;
+import Conecction.ConecctionMongo;
+import org.bson.Document;
+
+public class ModeloIniciarSesion {
+
+    //DECLARAMOS LOS ATRIBUTOS QUE USAREMOS EN ESTA CLASE
+    private String email, password;
+    //CREAMOS UN OBJETO PARA ACCEDER A LOS METODOS DE LA CONECCION A MONGO Y PODER BUSCAR LAS CREDENCIALES
+    ConecctionMongo mongoDB = new ConecctionMongo();
+
+    private String emailAdmin = "administrador@gmail.com";
+    private String passwordAdmin = "Administrador2024";
+    private String emailClient = "";
+    private String passwordClient = "";
+    private String emailIngresado, passwordIngresado;
+    private boolean isValid = true;
+
+    public String Validate() {
+        //SI USAMOS LAS CREDENCIALES DE ADMINISTRADOR, NOS INGRESARA A LAS VENTANAS DE ADMINISTRADOR
+        if (emailAdmin.equals(email) && passwordAdmin.equals(password)) {
+            return "admin";
+            //CASO CONTRARIO, INGRESERAMOS A LAS VENTANAS A LAS QUE PUEDE ACCEDER EL CLIENTE
+        } else {
+            //INGRESAREMOS A LA COLECCION DONDE SE ENCONTRARAN LAS CREDENCIALES
+            mongoDB.setNameCollection("Clientes");
+            //BUSACAREMOS LSO DATOS EN EL DOCUMENTO POR CORREO Y CONTRASEÑA
+            Document query = new Document("Correo", email).append("password", password);
+            //SI LO ENCONTRAMOS NOS DARA UN RESULTADO
+            Document result = mongoDB.findDocument(query);
+            //SI ELR ESULTADO QUE NOS ES DIFERENTE DE NULO, ENTONCES ACCEDEREMOS A LAS VENTANAS DE LOS CLIENTES
+            if (result != null) {
+                return "client";
+            }
+        }
+        //SI TODO FALLA NOS RETORNARA ALGO INVALIDO, QUIERE DECIR QUE NO PODREMOS INGRESAR A NINGUN SITIO
+        return "invalid";
+    }
+}
