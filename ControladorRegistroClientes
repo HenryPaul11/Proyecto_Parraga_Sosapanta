@@ -1,0 +1,53 @@
+package Controller;
+
+import org.bson.Document;
+import Conecction.ConecctionMongo;
+import Model.ModeloRegistrocliente;
+import Model.Person;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import View.RegistroCliente;
+import View.IniciarSesion;
+
+
+public class ControladorRegistroCliente implements ActionListener{
+
+    private Document document = new Document();
+    ConecctionMongo conecctionMongo = new ConecctionMongo();
+    ModeloRegistrocliente modeloRegistrocliente = new ModeloRegistrocliente("", "", 0, "", "", "", "", "");
+    RegistroCliente registroClientes = new RegistroCliente();
+    IniciarSesion iniciarSesion = new IniciarSesion();
+    
+    public ControladorRegistroCliente() {
+        this.registroClientes.btnRegister.addActionListener(this);
+        this.registroClientes.btnLogin.addActionListener(this);
+    }
+
+    public boolean saveClient() {
+        conecctionMongo.setNameCollection("clientes");
+        //getNameC(), getId(),getLastnamec(), age, getPasswordC()
+        document.append("Nombre", modeloRegistrocliente.getName());
+        document.append("Apellido", modeloRegistrocliente.getLastname());
+        document.append("Cedula", modeloRegistrocliente.getDni());
+        document.append("Tlf. Movil", modeloRegistrocliente.getNumPhone());
+        document.append("Correo", modeloRegistrocliente.getEmail());
+        document.append("Contraseña", modeloRegistrocliente.getPassword());
+        document.append("Cfm Contraseña", modeloRegistrocliente.getPasswordC());
+        document.append("Edad", String.valueOf(modeloRegistrocliente.getAge()));
+        return conecctionMongo.createDocument(document);
+    }
+
+    public void login(){
+        registroClientes.setVisible(false);
+        iniciarSesion.setVisible(true);
+    }
+    
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if(e.getSource() == registroClientes.btnRegister){
+            saveClient();
+        }else if(e.getSource() == registroClientes.btnLogin){
+            login();
+        }
+    }
+}
