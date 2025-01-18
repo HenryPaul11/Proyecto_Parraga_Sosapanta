@@ -1,0 +1,83 @@
+package Controller;
+
+import Model.ModeloIniciarSesion;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import View.IniciarSesion;
+import View.PrincipalAdmin;
+import View.InicioPrincipal;
+import View.RegistroCliente;
+import View.OlvidoContraseña;
+import Conecction.ConecctionMongo;
+
+public class ControladorIniciarSesion implements ActionListener{
+    
+    ModeloIniciarSesion modeloIniciarSesion = new ModeloIniciarSesion();
+    IniciarSesion iniciarSesion = new IniciarSesion();
+    ConecctionMongo conecctionMongo = new ConecctionMongo();
+    PrincipalAdmin principalAdmin = new PrincipalAdmin();
+    InicioPrincipal inicioPrincipal = new InicioPrincipal();
+    RegistroCliente registroCliente = new RegistroCliente();
+    OlvidoContraseña olvidoContraseña = new OlvidoContraseña();
+
+    public ControladorIniciarSesion() {
+        this.iniciarSesion.btnLogin.addActionListener(this);
+        this.iniciarSesion.btnRegister.addActionListener(this);
+        this.iniciarSesion.btnforgotPassword.addActionListener(this);
+    }
+    
+    private void openAdmin() {
+        conecctionMongo.setNameCollection("Rutas");
+        principalAdmin.setLocationRelativeTo(null); // Usa la instancia existente
+        principalAdmin.setVisible(true); // Muestra la ventana
+        iniciarSesion.setVisible(false); // Oculta la ventana de inicio
+    }
+
+    private void openClient() {
+        inicioPrincipal.setLocationRelativeTo(null); // Usa la instancia existente
+        inicioPrincipal.setVisible(true); // Muestra la ventana
+        iniciarSesion.setVisible(false); // Oculta la ventana de inicio
+        conecctionMongo.setNameCollection("Destinos");
+    }
+    
+    public void fieldValidate(){
+        String loggedEmail = iniciarSesion.txtEmail.getText();
+        String loggedPassword = new String(iniciarSesion.pasPassword.getPassword());
+        if(loggedEmail.isEmpty() || loggedPassword.isEmpty()){
+            iniciarSesion.lblerrEmail.setText("Campos oblogatorios");
+            iniciarSesion.lblerrPassword.setText("Campos oblogatorios");
+            iniciarSesion.lblerrEmail.setVisible(true);
+            iniciarSesion.lblerrPassword.setVisible(true);
+        }else{
+            iniciarSesion.lblerrEmail.setVisible(false);
+            iniciarSesion.lblerrPassword.setVisible(false);
+            String role = modeloIniciarSesion.Validate();
+            switch(role){
+                case "admin":
+                    openAdmin();
+                    break;
+                case "client":
+                    openClient();
+                    break;
+                    default:
+                        iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
+                        iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
+                        break;
+            }
+        }
+    }
+    
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if(e.getSource() == iniciarSesion.btnLogin){
+            fieldValidate();
+        }else if (e.getSource() == iniciarSesion.btnRegister){
+            iniciarSesion.setVisible(false);
+            registroCliente.setVisible(true);
+        }else if (e.getSource() == iniciarSesion.btnforgotPassword){
+            iniciarSesion.setVisible(false);
+            registroCliente.setVisible(true);
+        }
+    }
+    
+}
