@@ -10,8 +10,8 @@ import View.RegistroCliente;
 import View.OlvidoContraseña;
 import Conecction.ConecctionMongo;
 
-public class ControladorIniciarSesion implements ActionListener{
-    
+public class ControladorIniciarSesion implements ActionListener {
+
     ModeloIniciarSesion modeloIniciarSesion = new ModeloIniciarSesion();
     IniciarSesion iniciarSesion = new IniciarSesion();
     ConecctionMongo conecctionMongo = new ConecctionMongo();
@@ -24,60 +24,72 @@ public class ControladorIniciarSesion implements ActionListener{
         this.iniciarSesion.btnLogin.addActionListener(this);
         this.iniciarSesion.btnRegister.addActionListener(this);
         this.iniciarSesion.btnforgotPassword.addActionListener(this);
+        this.iniciarSesion.chviewPassword.addActionListener(this);
     }
-    
+
     private void openAdmin() {
         conecctionMongo.setNameCollection("Rutas");
-        principalAdmin.setLocationRelativeTo(null); // Usa la instancia existente
-        principalAdmin.setVisible(true); // Muestra la ventana
-        iniciarSesion.setVisible(false); // Oculta la ventana de inicio
+        principalAdmin.setLocationRelativeTo(null); // USA INSTANCIA EXISTENTE
+        principalAdmin.setVisible(true); // MUESTRA VENTANA ADMIN
+        iniciarSesion.setVisible(false); // OCULTA INICIAR SESION
     }
 
     private void openClient() {
-        inicioPrincipal.setLocationRelativeTo(null); // Usa la instancia existente
-        inicioPrincipal.setVisible(true); // Muestra la ventana
-        iniciarSesion.setVisible(false); // Oculta la ventana de inicio
+        inicioPrincipal.setLocationRelativeTo(null); // USA INSTANCIA EXISTENTE
+        inicioPrincipal.setVisible(true); // MUESTRA VENTANA CLIENTE
+        iniciarSesion.setVisible(false); // OCULTA INICIAR SESION
         conecctionMongo.setNameCollection("Destinos");
     }
-    
-    public void fieldValidate(){
+
+    //ESTE METODO NOS PERMITIRA VER LA CONTRASEÑA SI SELECCIONAMOS EL CHECK BOX
+    public void viewPassword() {
+        if (iniciarSesion.chviewPassword.isSelected()) {
+            iniciarSesion.pasPassword.setEchoChar((char) 0);
+        } else {
+            iniciarSesion.pasPassword.setEchoChar('•');
+        }
+    }
+
+    public void fieldValidate() {
         String loggedEmail = iniciarSesion.txtEmail.getText();
         String loggedPassword = new String(iniciarSesion.pasPassword.getPassword());
-        if(loggedEmail.isEmpty() || loggedPassword.isEmpty()){
+        if (loggedEmail.isEmpty() || loggedPassword.isEmpty()) {
             iniciarSesion.lblerrEmail.setText("Campos oblogatorios");
             iniciarSesion.lblerrPassword.setText("Campos oblogatorios");
             iniciarSesion.lblerrEmail.setVisible(true);
             iniciarSesion.lblerrPassword.setVisible(true);
-        }else{
+        } else {
             iniciarSesion.lblerrEmail.setVisible(false);
             iniciarSesion.lblerrPassword.setVisible(false);
             String role = modeloIniciarSesion.Validate();
-            switch(role){
+            switch (role) {
                 case "admin":
                     openAdmin();
                     break;
                 case "client":
                     openClient();
                     break;
-                    default:
-                        iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
-                        iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
-                        break;
+                default:
+                    iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
+                    iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
+                    break;
             }
         }
     }
-    
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource() == iniciarSesion.btnLogin){
+        if (e.getSource() == iniciarSesion.btnLogin) {
             fieldValidate();
-        }else if (e.getSource() == iniciarSesion.btnRegister){
+        } else if (e.getSource() == iniciarSesion.chviewPassword) {
+
+        } else if (e.getSource() == iniciarSesion.btnRegister) {
             iniciarSesion.setVisible(false);
             registroCliente.setVisible(true);
-        }else if (e.getSource() == iniciarSesion.btnforgotPassword){
+        } else if (e.getSource() == iniciarSesion.btnforgotPassword) {
             iniciarSesion.setVisible(false);
             registroCliente.setVisible(true);
         }
     }
-    
+
 }
