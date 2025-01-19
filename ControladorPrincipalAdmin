@@ -21,7 +21,7 @@ public class ControladorPrincipalAdmin implements ActionListener {
 
     private PrincipalAdmin vista = new PrincipalAdmin();
     private AgregarPersonal aggPersonal = new AgregarPersonal();
-    private ModeloPrincipalAdmin modelo;
+    private ModeloPrincipalAdmin modelo = new ModeloPrincipalAdmin("", "", "", "");
     private ConnectionMongo mongo = new ConnectionMongo();
     private ControladorAggPersonal controladorAggPersonal;
 
@@ -271,3 +271,4 @@ public class ControladorPrincipalAdmin implements ActionListener {
     }
 
 }
+    
