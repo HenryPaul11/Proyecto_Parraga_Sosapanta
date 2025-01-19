@@ -1,0 +1,271 @@
+package Controller;
+
+import Conecction.ConnectionMongo;
+import Model.Cliente;
+import Model.ModeloAggPersonal;
+import Model.ModeloInicioPrincipal;
+import Model.ModeloPrincipalAdmin;
+import View.AgregarPersonal;
+import View.InicioPrincipal;
+import View.PrincipalAdmin;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import org.bson.Document;
+
+public class ControladorPrincipalAdmin implements ActionListener {
+
+    private PrincipalAdmin vista = new PrincipalAdmin();
+    private AgregarPersonal aggPersonal = new AgregarPersonal();
+    private ModeloPrincipalAdmin modelo;
+    private ConnectionMongo mongo = new ConnectionMongo();
+
+    public ControladorPrincipalAdmin(PrincipalAdmin vista, ModeloPrincipalAdmin modelo) {
+        this.vista = vista;
+        this.modelo = modelo;
+
+        //INICIALIZAR LOS BOTONES
+        this.vista.BtnSave.addActionListener(this);
+        this.vista.BtnClean.addActionListener(this);
+        this.vista.BtnDelete.addActionListener(this);
+        this.vista.BtnEdit.addActionListener(this);
+        this.vista.BtnExit.addActionListener(this);
+        this.vista.BtnFind.addActionListener(this);
+        this.vista.BtnAggPerson.addActionListener(this);
+    }
+    boolean isUpdate = false;
+
+    public void starView() {
+        vista.setVisible(true);
+    }
+
+    public void tablaAdmin() {
+        DefaultTableModel tabla = mongo.cargarTabla();
+        vista.TbtAdmin.setModel(tabla);
+    }
+
+    private void LimpiarTab() {
+        DefaultTableModel modelo = (DefaultTableModel) vista.TbtAdmin.getModel();
+        modelo.setRowCount(0);
+    }
+
+    public void btnSave() {
+        String salida = "";
+        if (vista.CbxHome.getSelectedItem() != null) {
+            salida = vista.CbxHome.getSelectedItem().toString();
+        }
+        String llegada = "";
+        if (vista.CbxEnd.getSelectedItem() != null) {
+            llegada = vista.CbxEnd.getSelectedItem().toString();
+        }
+        String conductor = vista.TxtDriver.getText();
+        String tiempoSalida = vista.TxtTimeD.getText();
+
+        modelo.setDriver(conductor);
+        modelo.setTimeEnd(tiempoSalida);
+        modelo.setTravelEnd(llegada);
+        modelo.setTravelHome(salida);
+
+        boolean band = modelo.validarDatos(vista);
+        if (!band) {
+            if (!isUpdate) {
+                //CREA
+                Document doc = new Document("Conductor", modelo.getDriver());
+                if (mongo.readDocument(doc).isEmpty()) {
+                    doc = new Document("Conductor", modelo.getDriver())
+                            .append("Hora de salida", modelo.getTimeEnd())
+                            .append("Salida", modelo.getTravelHome())
+                            .append("Llegada", modelo.getTravelEnd());
+                    mongo.createDocument(doc);
+                    tablaAdmin();
+                    JOptionPane.showMessageDialog(vista, "Horario guardado con éxito");
+                } else {
+                    JOptionPane.showMessageDialog(vista, "El conductor ya esta asignado");
+                }
+                //ACTUALIZA
+            } else {
+                //PARAMETRO DE BUSQUEDA, EN BASE A Q BUSCAS: VIEJO
+                Document oldDocument = new Document("Conductor", modelo.getDriver());
+                //DATO A ACTUALIZAR: NUEVO
+                Document doc = new Document();
+                doc = new Document("Conductor", modelo.getDriver())
+                        .append("Hora de salida", modelo.getTimeEnd())
+                        .append("Salida", modelo.getTravelHome())
+                        .append("Llegada", modelo.getTravelEnd());
+                mongo.createDocument(doc);
+                tablaAdmin();
+                JOptionPane.showMessageDialog(vista, "Horario guardado con éxito");
+            }
+        } else {
+            System.out.println("Campos inválidos");
+        }
+    }
+
+    public void btnEdit() {
+        Document docHorarios = new Document();
+        DefaultTableModel tabla = (DefaultTableModel) vista.TbtAdmin.getModel();
+        int filaSelect = vista.TbtAdmin.getSelectedRow();
+
+        if (filaSelect != -1) {
+            String inicio = (String) tabla.getValueAt(filaSelect, 0);
+            String llegada = (String) tabla.getValueAt(filaSelect, 1);
+            String conductor = (String) tabla.getValueAt(filaSelect, 2);
+            String salida = (String) tabla.getValueAt(filaSelect, 3);
+
+            //OBTENER NUEVOS VALORES
+            String newSalida = "";
+            if (vista.CbxHome.getSelectedItem() != null) {
+                newSalida = vista.CbxHome.getSelectedItem().toString();
+            }
+            String newLlegada = "";
+            if (vista.CbxEnd.getSelectedItem() != null) {
+                newLlegada = vista.CbxEnd.getSelectedItem().toString();
+            }
+            String NewConductor = vista.TxtDriver.getText();
+            String newTiempoSalida = vista.TxtTimeD.getText();
+
+            vista.TxtDriver.setText(conductor);
+            vista.TxtTimeD.setText(salida);
+
+            for (int i = 0; i < vista.CbxHome.getItemCount(); i++) {
+                if (vista.CbxHome.getItemAt(i).equals(inicio)) {
+                    vista.CbxHome.setSelectedIndex(i);
+                    break; // Salir del bucle una vez encontrado
+                }
+            }
+
+            for (int i = 0; i < vista.CbxEnd.getItemCount(); i++) {
+                if (vista.CbxEnd.getItemAt(i).equals(llegada)) {
+                    vista.CbxEnd.setSelectedIndex(i);
+                    break; // Salir del bucle una vez encontrado
+                }
+            }
+
+            isUpdate = true;
+            vista.BtnSave.setText("ACTUALIZAR");
+        }
+    }
+
+    public void btnFind() {
+        if (vista.BtnFind.getText().equals("BUSCAR")) {
+            vista.BtnFind.setText("CANCELAR");
+            String conductor = JOptionPane.showInputDialog(vista, "Ingrese el nombre del conductor a buscar:");
+
+            // Validar que la entrada no esté vacía
+            if (conductor == null || conductor.isEmpty()) {
+                JOptionPane.showMessageDialog(vista, "Búsqueda cancelada.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                vista.BtnFind.setText("BUSCAR");
+                return;
+            }
+
+            // Crear filtro para buscar por conductor
+            Document filtro = new Document("Conductor", conductor);
+            try {
+                List<Document> results = mongo.readDocument(filtro);
+                LimpiarTab(); // Limpiar la tabla antes de mostrar nuevos resultados
+
+                if (results != null && !results.isEmpty()) {
+                    DefaultTableModel tabla = (DefaultTableModel) vista.TbtAdmin.getModel();
+                    for (Document getDoc : results) {
+                        tabla.addRow(new Object[]{
+                            getDoc.getString("Inicio"),
+                            getDoc.getString("Llegada"),
+                            getDoc.getString("Conductor"),
+                            getDoc.getString("Hora de Salida")
+                        });
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(vista, "No se encontraron registros para el conductor ingresado.", "Búsqueda", JOptionPane.WARNING_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(vista, "Error al buscar datos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            vista.BtnFind.setText("BUSCAR");
+            tablaAdmin();
+        }
+
+    }
+
+    public void btnDelete() {
+        int filaSeleccionada = vista.TbtAdmin.getSelectedRow();
+        if (filaSeleccionada < 0) {
+            JOptionPane.showMessageDialog(null, "Debe seleccionar una fila para eliminar", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int opcion = JOptionPane.showConfirmDialog(null, "¿Está seguro de eliminar este registro?", "Confirmación", JOptionPane.YES_NO_OPTION);
+        if (opcion == JOptionPane.YES_OPTION) {
+            // Obtener la cédula del registro seleccionado
+            String cedula = vista.TbtAdmin.getValueAt(filaSeleccionada, 0).toString();
+            // Crear el filtro para eliminar en MongoDB
+            Document filtro = new Document("Cedula", cedula);
+            // Llamar al método para eliminar en MongoDB
+            boolean eliminado = mongo.deleteDocumet(filtro);
+            if (eliminado) {
+                // Eliminar la fila de la tabla
+                DefaultTableModel modelo = (DefaultTableModel) vista.TbtAdmin.getModel();
+                modelo.removeRow(filaSeleccionada);
+
+                JOptionPane.showMessageDialog(null, "Registro eliminado con éxito.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(null, "No se pudo eliminar el registro.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    public void btnClean() {
+        //LIMPIAR VALIDADORES
+        vista.LbValidationEnd.setText(" ");
+        vista.LbValidationDriver.setText(" ");
+        vista.LbValidationHome.setText(" ");
+        vista.LbValidationTimeD.setText(" ");
+
+        //LIMPIAR CAJAS DE TEXTO
+        vista.TxtDriver.setText("");
+        vista.TxtTimeD.setText("");
+        vista.CbxEnd.setSelectedIndex(-1);
+        vista.CbxHome.setSelectedIndex(-1);
+
+    }
+
+    public void btnExit() {
+        InicioPrincipal vista = new InicioPrincipal();
+        ModeloInicioPrincipal modelo = new ModeloInicioPrincipal("", 0);
+        ControladorInicioPrincipal inicio = new ControladorInicioPrincipal(vista, modelo);
+        inicio.starView();
+    }
+
+    public void btnAggPerson() {
+        vista.setVisible(false);
+        aggPersonal.setVisible(true);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == vista.BtnSave) {
+            btnSave();
+        }
+        if (e.getSource() == vista.BtnEdit) {
+            btnEdit();
+        }
+        if (e.getSource() == vista.BtnDelete) {
+            btnDelete();
+        }
+        if (e.getSource() == vista.BtnFind) {
+            btnFind();
+        }
+        if (e.getSource() == vista.BtnClean) {
+            btnClean();
+        }
+        if (e.getSource() == vista.BtnExit) {
+            btnExit();
+        }
+        if (e.getSource() == vista.BtnAggPerson) {
+            btnAggPerson();
+        }
+    }
+
+}
