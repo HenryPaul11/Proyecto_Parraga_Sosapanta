@@ -15,6 +15,7 @@ import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import org.bson.Document;
+import Controller.ControladorAggPersonal;
 
 public class ControladorPrincipalAdmin implements ActionListener {
 
@@ -22,6 +23,7 @@ public class ControladorPrincipalAdmin implements ActionListener {
     private AgregarPersonal aggPersonal = new AgregarPersonal();
     private ModeloPrincipalAdmin modelo;
     private ConnectionMongo mongo = new ConnectionMongo();
+    private ControladorAggPersonal controladorAggPersonal;
 
     public ControladorPrincipalAdmin(PrincipalAdmin vista, ModeloPrincipalAdmin modelo) {
         this.vista = vista;
@@ -240,7 +242,7 @@ public class ControladorPrincipalAdmin implements ActionListener {
 
     public void btnAggPerson() {
         vista.setVisible(false);
-        aggPersonal.setVisible(true);
+        controladorAggPersonal.starView();
     }
 
     @Override
