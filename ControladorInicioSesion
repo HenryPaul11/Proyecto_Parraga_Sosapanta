@@ -8,60 +8,89 @@ import View.PrincipalAdmin;
 import View.InicioPrincipal;
 import View.RegistroCliente;
 import View.OlvidoContraseña;
-import Conecction.ConecctionMongo;
+import Conecction.ConnectionMongo;
 
 public class ControladorIniciarSesion implements ActionListener {
 
-    ModeloIniciarSesion modeloIniciarSesion = new ModeloIniciarSesion();
-    IniciarSesion iniciarSesion = new IniciarSesion();
-    ConecctionMongo conecctionMongo = new ConecctionMongo();
-    PrincipalAdmin principalAdmin = new PrincipalAdmin();
-    InicioPrincipal inicioPrincipal = new InicioPrincipal();
-    RegistroCliente registroCliente = new RegistroCliente();
-    OlvidoContraseña olvidoContraseña = new OlvidoContraseña();
+    //ATRIBUTOS DE MODELO Y VISTA
+    private IniciarSesion vista;
+    private ModeloIniciarSesion modelo;
+    //VISTA INICIO PIRNCIPAL Y PRINCIPAL ADMIN
+    private PrincipalAdmin vistaAdmin;
+    private InicioPrincipal vistaPrincipal;
+    private RegistroCliente vistaRegistro;
+    private OlvidoContraseña vistaContrasenia;
 
-    public ControladorIniciarSesion() {
-        this.iniciarSesion.btnLogin.addActionListener(this);
-        this.iniciarSesion.btnRegister.addActionListener(this);
-        this.iniciarSesion.btnforgotPassword.addActionListener(this);
-        this.iniciarSesion.chviewPassword.addActionListener(this);
+    ConnectionMongo mongo = new ConnectionMongo();
+
+    public ControladorIniciarSesion(IniciarSesion vista, ModeloIniciarSesion modelo) {
+        this.vista = vista;
+        this.modelo = modelo;
+
+        vistaAdmin = new PrincipalAdmin();
+        vistaPrincipal = new InicioPrincipal();
+        vistaRegistro = new RegistroCliente();
+        vistaContrasenia = new OlvidoContraseña();
+
+        this.vista.BtnLogin.addActionListener(this);
+        this.vista.BtnRegister.addActionListener(this);
+        this.vista.BtnForgotPassword.addActionListener(this);
+        this.vista.ChViewPassword.addActionListener(this);
+    }
+
+    public void starView() {
+        vista.setVisible(true);
     }
 
     private void openAdmin() {
-        conecctionMongo.setNameCollection("Rutas");
-        principalAdmin.setLocationRelativeTo(null); // USA INSTANCIA EXISTENTE
-        principalAdmin.setVisible(true); // MUESTRA VENTANA ADMIN
-        iniciarSesion.setVisible(false); // OCULTA INICIAR SESION
+        mongo.setNameCollection("Rutas");
+        vistaAdmin.setLocationRelativeTo(null); // Usa la instancia existente
+        vistaAdmin.setVisible(true); // Muestra la ventana
+        vista.setVisible(false); // Oculta la ventana de inicio
+        vistaAdmin.setLocationRelativeTo(null); // USA INSTANCIA EXISTENTE
+        vistaAdmin.setVisible(true); // MUESTRA VENTANA ADMIN
+        vista.setVisible(false); // OCULTA INICIAR SESION
     }
 
     private void openClient() {
-        inicioPrincipal.setLocationRelativeTo(null); // USA INSTANCIA EXISTENTE
-        inicioPrincipal.setVisible(true); // MUESTRA VENTANA CLIENTE
-        iniciarSesion.setVisible(false); // OCULTA INICIAR SESION
-        conecctionMongo.setNameCollection("Destinos");
+        vistaPrincipal.setLocationRelativeTo(null); // Usa la instancia existente
+        vistaPrincipal.setVisible(true); // Muestra la ventana
+        vista.setVisible(false); // Oculta la ventana de inicio
+        vistaPrincipal.setLocationRelativeTo(null); // USA INSTANCIA EXISTENTE
+        vistaPrincipal.setVisible(true); // MUESTRA VENTANA CLIENTE
+        vista.setVisible(false); // OCULTA INICIAR SESION
+        mongo.setNameCollection("Destinos");
     }
 
     //ESTE METODO NOS PERMITIRA VER LA CONTRASEÑA SI SELECCIONAMOS EL CHECK BOX
     public void viewPassword() {
-        if (iniciarSesion.chviewPassword.isSelected()) {
-            iniciarSesion.pasPassword.setEchoChar((char) 0);
+        if (vista.ChViewPassword.isSelected()) {
+            vista.PassPassword.setEchoChar((char) 0);
         } else {
-            iniciarSesion.pasPassword.setEchoChar('•');
+            vista.PassPassword.setEchoChar('•');
         }
     }
 
     public void fieldValidate() {
-        String loggedEmail = iniciarSesion.txtEmail.getText();
-        String loggedPassword = new String(iniciarSesion.pasPassword.getPassword());
+        String loggedEmail = vista.TxtEmail.getText();
+        String loggedPassword = new String(vista.PassPassword.getPassword());
+
+        // Validar campos vacíos
         if (loggedEmail.isEmpty() || loggedPassword.isEmpty()) {
-            iniciarSesion.lblerrEmail.setText("Campos oblogatorios");
-            iniciarSesion.lblerrPassword.setText("Campos oblogatorios");
-            iniciarSesion.lblerrEmail.setVisible(true);
-            iniciarSesion.lblerrPassword.setVisible(true);
+            vista.LbInvalidUser.setText("Campos obligatorios");
+            vista.LbInvalidPassword.setText("Campos obligatorios");
+            vista.LbInvalidUser.setVisible(true);
+            vista.LbInvalidPassword.setVisible(true);
         } else {
-            iniciarSesion.lblerrEmail.setVisible(false);
-            iniciarSesion.lblerrPassword.setVisible(false);
-            String role = modeloIniciarSesion.Validate();
+            // Asignar valores al modelo antes de validarlos
+            modelo.setEmail(loggedEmail);
+            modelo.setPassword(loggedPassword);
+
+            // Ocultar mensajes de error y validar
+            vista.LbInvalidUser.setVisible(false);
+            vista.LbInvalidPassword.setVisible(false);
+
+            String role = modelo.Validate();
             switch (role) {
                 case "admin":
                     openAdmin();
@@ -70,8 +99,10 @@ public class ControladorIniciarSesion implements ActionListener {
                     openClient();
                     break;
                 default:
-                    iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
-                    iniciarSesion.lblerrEmail.setText("Correo o contraseña invalida");
+                    vista.LbInvalidUser.setText("Correo o contraseña inválida");
+                    vista.LbInvalidPassword.setText("Correo o contraseña inválida");
+                    vista.LbInvalidUser.setVisible(true);
+                    vista.LbInvalidPassword.setVisible(true);
                     break;
             }
         }
@@ -79,17 +110,17 @@ public class ControladorIniciarSesion implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == iniciarSesion.btnLogin) {
+        if (e.getSource() == vista.BtnLogin) {
             fieldValidate();
-        } else if (e.getSource() == iniciarSesion.chviewPassword) {
+        }
+        if (e.getSource() == vista.BtnRegister) {
+            vista.setVisible(false);
+            vistaRegistro.setVisible(true);
 
-        } else if (e.getSource() == iniciarSesion.btnRegister) {
-            iniciarSesion.setVisible(false);
-            registroCliente.setVisible(true);
-        } else if (e.getSource() == iniciarSesion.btnforgotPassword) {
-            iniciarSesion.setVisible(false);
-            registroCliente.setVisible(true);
+        }
+        if (e.getSource() == vista.BtnForgotPassword) {
+            vista.setVisible(false);
+            vistaContrasenia.setVisible(true);
         }
     }
-
 }
