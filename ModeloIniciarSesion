@@ -1,15 +1,15 @@
 package Model;
 
 import org.bson.Document;
-import Conecction.ConecctionMongo;
+import Conecction.ConnectionMongo;
 import org.bson.Document;
 
 public class ModeloIniciarSesion {
-
     //DECLARAMOS LOS ATRIBUTOS QUE USAREMOS EN ESTA CLASE
+
     private String email, password;
     //CREAMOS UN OBJETO PARA ACCEDER A LOS METODOS DE LA CONECCION A MONGO Y PODER BUSCAR LAS CREDENCIALES
-    ConecctionMongo mongoDB = new ConecctionMongo();
+    ConnectionMongo mongoDB = new ConnectionMongo();
 
     private String emailAdmin = "administrador@gmail.com";
     private String passwordAdmin = "Administrador2024";
@@ -17,6 +17,22 @@ public class ModeloIniciarSesion {
     private String passwordClient = "";
     private String emailIngresado, passwordIngresado;
     private boolean isValid = true;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
     public String Validate() {
         //SI USAMOS LAS CREDENCIALES DE ADMINISTRADOR, NOS INGRESARA A LAS VENTANAS DE ADMINISTRADOR
