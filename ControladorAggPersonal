@@ -1,0 +1,72 @@
+package Controller;
+
+import Conecction.ConnectionMongo;
+import Model.ModeloAggPersonal;
+import View.AgregarPersonal;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class ControladorAggPersonal implements ActionListener {
+//
+
+    private AgregarPersonal vista = new AgregarPersonal();
+    private ModeloAggPersonal modelo = new ModeloAggPersonal("", "", "", "", "", "", "");
+    private ConnectionMongo mongo = new ConnectionMongo();
+
+    public ControladorAggPersonal(AgregarPersonal vista, ModeloAggPersonal modelo) {
+        this.vista = vista;
+        this.modelo = modelo;
+
+        //INICIALIZAR LOS BOTONES
+        this.vista.BtnSave.addActionListener(this);
+        this.vista.BtnClean.addActionListener(this);
+        this.vista.BtnDelete.addActionListener(this);
+        this.vista.BtnEdit.addActionListener(this);
+        this.vista.BtnExit.addActionListener(this);
+        this.vista.BtnSearch.addActionListener(this);
+
+    }
+
+    public void starView() {
+        vista.setVisible(true);
+    }
+
+    public void btnSave() {
+        String nombres = vista.TxtNames.getText();
+        String cedula = vista.TxtDni.getText();
+        String celular = vista.TxtNumPhone.getText();
+        String placa = vista.TxtPlate.getText();
+        String marca = vista.TxtBrand.getText();
+        String color = vista.TxtColor.getText();
+        String genero = "";
+        if (vista.CbxGenre.getSelectedItem() != null) {
+            genero = vista.CbxGenre.getSelectedItem().toString();
+        }
+
+    }
+
+    public void btnEdit() {
+
+    }
+
+    public void btnFind() {
+
+    }
+
+    public void btnDelete() {
+
+    }
+
+    public void btnClean() {
+
+    }
+
+    public void btnExit() {
+
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+    }
+
+}
