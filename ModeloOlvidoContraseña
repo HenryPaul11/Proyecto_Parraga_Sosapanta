@@ -1,15 +1,8 @@
 package Model;
 
-import javax.swing.JOptionPane;
-import org.bson.Document;
-import View.OlvidoContraseña;
-import Conecction.ConecctionMongo;
-
 public class ModeloOlvidoContraseña {
 
     private String email, newPassword, newPasswordC;
-
-    OlvidoContraseña olvidoContraseña = new OlvidoContraseña();
 
     public ModeloOlvidoContraseña(String email, String newPassword, String newPasswordC) {
         this.email = email;
@@ -39,25 +32,5 @@ public class ModeloOlvidoContraseña {
 
     public void setNewPasswordC(String newPasswordC) {
         this.newPasswordC = newPasswordC;
-    }
-
-    public boolean validatePasswords() {
-        boolean band = true;
-        if (newPassword.isEmpty() || newPassword.isEmpty()) {
-            olvidoContraseña.lblerrnewPassword.setText("Las contraseñas no pueden estar vacias");
-            olvidoContraseña.lblerrnewPassword.setVisible(true);
-            band = false;
-        } else {
-            olvidoContraseña.lblerrnewPassword.setVisible(false);
-        }
-
-        if (!newPassword.equals(newPasswordC)) {
-            olvidoContraseña.lblerrnewPasswordC.setText("Las contraseñas no coinciden");
-            olvidoContraseña.lblerrnewPasswordC.setVisible(true);
-            band = false;
-        } else {
-            olvidoContraseña.lblerrnewPasswordC.setVisible(false);
-        }
-        return false;
     }
 }
