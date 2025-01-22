@@ -1,0 +1,86 @@
+package Model;
+
+import View.PrincipalAdmin;
+import javax.swing.JOptionPane;
+
+public class ModeloPrincipalAdmin implements Interface {
+
+    private String travelHome, travelEnd, driver, timeEnd;   //travel= Viajar
+
+    public ModeloPrincipalAdmin(String travelHome, String travelEnd, String driver, String timeEnd) {
+        this.travelHome = travelHome;
+        this.travelEnd = travelEnd;
+        this.driver = driver;
+        this.timeEnd = timeEnd;
+    }
+    //GET Y SETS
+
+    public String getTravelHome() {
+        return travelHome;
+    }
+
+    public void setTravelHome(String travelHome) {
+        this.travelHome = travelHome;
+    }
+
+    public String getTravelEnd() {
+        return travelEnd;
+    }
+
+    public void setTravelEnd(String travelEnd) {
+        this.travelEnd = travelEnd;
+    }
+
+    public String getDriver() {
+        return driver;
+    }
+
+    public void setDriver(String driver) {
+        this.driver = driver;
+    }
+
+    public String getTimeEnd() {
+        return timeEnd;
+    }
+
+    public void setTimeEnd(String timeEnd) {
+        this.timeEnd = timeEnd;
+    }
+
+    public boolean validarDatos(PrincipalAdmin vista) {
+        boolean validacion = false;
+        //SE REINICIA LOS " "
+        vista.LbValidationDriver.setText(" ");
+        vista.LbValidationHome.setText(" ");
+        vista.LbValidationEnd.setText(" ");
+        vista.LbValidationTimeD.setText(" ");
+
+        if (getDriver().isBlank()) {
+            vista.LbValidationDriver.setText("*Ingresa el Conductor");
+            validacion = true;
+        }
+        if (getTravelEnd().isBlank()) {
+            vista.LbValidationEnd.setText("*Opción obligatoria");
+            validacion = true;
+        }
+        if (getTimeEnd().isBlank()) {
+            vista.LbValidationTimeD.setText("*Opción obligatoria");
+            validacion = true;
+        }
+        if (getTravelHome().isBlank()) {
+            vista.LbValidationHome.setText("*Opción obligatoria");
+            validacion = true;
+        }
+        return validacion;
+    }
+
+    @Override
+    public void mostrarDatos() {
+        JOptionPane.showMessageDialog(null, "Agregado con éxito."
+                + "\nInicio " + getTravelHome()
+                + "\nLlegada: " + getTravelEnd()
+                + "\nConductor: " + getDriver()
+                + "\nHora: " + getTimeEnd());
+    }
+
+}
