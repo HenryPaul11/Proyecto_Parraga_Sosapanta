@@ -1,19 +1,25 @@
 package Model;
 
 import View.RegistroCliente;
+import Connection.ConnectionMongo;
+import javax.swing.JOptionPane;
+import org.bson.Document;
 
-public class ModeloRegistrocliente extends Person {
+public class ModeloRegistrarCliente extends Person {
 
     private String numPhone, passwordC;
     private int age;
     //CREAMOS UN OBJETO PARA ACCEDER A LAS ETIQUETAS DE EL REGISTRO AL CLIENTE
-    RegistroCliente registroCliente = new RegistroCliente();
+    RegistroCliente vista;
+    ConnectionMongo connectionMongo = new ConnectionMongo();
+    Document document;
 
-    public ModeloRegistrocliente(String numPhone, String passwordC, int age, String email, String password, String dni) {
-        super(email, password, dni);
+    public ModeloRegistrarCliente(String numPhone, String passwordC, int age, String names, String email, String password, String dni, RegistroCliente vista) {
+        super(names, email, password, dni);
         this.numPhone = numPhone;
         this.passwordC = passwordC;
         this.age = age;
+        this.vista = vista;
     }
 
     public String getNumPhone() {
@@ -40,45 +46,135 @@ public class ModeloRegistrocliente extends Person {
         this.age = age;
     }
 
+    public boolean save() {
+        try {
+            connectionMongo.setNameCollection("Clientes");
+
+            boolean hasErrors = false;
+
+            // Verificar si ya existe un usuario con el mismo DNI
+            Document filtroDni = new Document("Cedula", getDni());
+            if (connectionMongo.findDocument(filtroDni) != null) {
+                vista.lblerrDni.setText("Ya existe un usuario con esta cédula");
+                vista.lblerrDni.setVisible(true);
+                hasErrors = true;
+            } else {
+                vista.lblerrDni.setVisible(false);
+            }
+
+            // Verificar si ya existe un usuario con el mismo correo
+            Document filtroCorreo = new Document("Correo", getEmail());
+            if (connectionMongo.findDocument(filtroCorreo) != null) {
+                vista.lblerrEmail.setText("Ya existe un usuario con este correo");
+                vista.lblerrEmail.setVisible(true);
+                hasErrors = true;
+            } else {
+                vista.lblerrEmail.setVisible(false);
+            }
+
+            // Verificar si ya existe un usuario con el mismo número de teléfono móvil
+            Document filtroTelefono = new Document("Telefono Movil", getNumPhone());
+            if (connectionMongo.findDocument(filtroTelefono) != null) {
+                vista.lblerrnumberPhone.setText("Ya existe un usuario con este número de teléfono móvil");
+                vista.lblerrnumberPhone.setVisible(true);
+                hasErrors = true;
+            } else {
+                vista.lblerrnumberPhone.setVisible(false);
+            }
+
+            // Si hay errores, devolver false
+            if (hasErrors) {
+                return false;
+            }
+
+            // Crear el nuevo documento si no hay errores
+            document = new Document()
+                    .append("Nombres", getNames())
+                    .append("Cedula", getDni())
+                    .append("Telefono Movil", getNumPhone())
+                    .append("Correo", getEmail())
+                    .append("Contraseña", getPassword())
+                    .append("Edad", getAge());
+
+            return connectionMongo.createDocument(document);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(vista, "Error al guardar: " + e.getMessage());
+            return false;
+        }
+    }
+
     @Override
     public boolean Validate() {
-        boolean band = true;
-        if (getNumPhone().length() != 10) {
-            registroCliente.lblerrnumberPhone.setText("El numero de telefono debe contener 10 caracteres");
-            registroCliente.lblerrnumberPhone.setVisible(true);
-            band = false;
-        } else {
-            registroCliente.lblerrnumberPhone.setVisible(false);
+        boolean validacion = false;
+
+        // Reiniciar mensajes de error
+        vista.lblerrName.setText(" ");
+        vista.lblerrPassword.setText(" ");
+        vista.lblerrEmail.setText(" ");
+        vista.lblerrPasswordC.setText(" ");
+        vista.lblerrAge.setText(" ");
+        vista.lblerrDni.setText(" ");
+        vista.lblerrnumberPhone.setText(" ");
+        // Validar nombre
+        if (getNames().isBlank()) {
+            vista.lblerrName.setText("*Opción obligatoria");
+            validacion = true;
         }
-        if (getPassword().trim().isEmpty()) {
-            registroCliente.lblerrPassword.setText("La contraseña no debe estar vacia");
-            registroCliente.lblerrPassword.setVisible(true);
-            band = false;
-        } else {
-            registroCliente.lblerrPassword.setVisible(false);
+
+        // Validar DNI
+        if (getDni().isBlank()) {
+            vista.lblerrDni.setText("*Opción obligatoria");
+            validacion = true;
+        } else if (!getDni().matches("^\\d{10}$")) { // Validar 10 dígitos
+            vista.lblerrDni.setText("*Solo dígitos y 10 caracteres");
+            validacion = true;
         }
-        if (getPassword().equals(getPasswordC())) {
-            registroCliente.lblerrPasswordC.setText("Las contraseñas deben coincidir");
-            registroCliente.lblerrPasswordC.setVisible(true);
-            band = false;
-        } else {
-            registroCliente.lblerrPasswordC.setVisible(false);
+
+        // Validar correo electrónico
+        if (getEmail().isBlank()) {
+            vista.lblerrEmail.setText("*Opción obligatoria");
+            validacion = true;
         }
-        if (getAge() < 18) {
-            registroCliente.lblerrAge.setText("Debe ser mayor de 18 años para poder registrarse");
-            registroCliente.lblerrAge.setVisible(true);
-            band = false;
-        } else {
-            registroCliente.lblerrAge.setVisible(false);
+
+        // Validar contraseña
+        if (getPassword().isBlank()) {
+            vista.lblerrPassword.setText("*Opción obligatoria");
+            validacion = true;
+        } else if (getPassword().length() > 20) {
+            vista.lblerrPassword.setText("*Máximo 20 caracteres");
+            validacion = true;
         }
-        if (getDni().length() != 10) {
-            registroCliente.lblerrDni.setText("La contraseña debe contener 10 caracteres");
-            registroCliente.lblerrDni.setVisible(true);
-            band = false;
-        } else {
-            registroCliente.lblerrDni.setVisible(false);
+
+        // Validar confirmación de contraseña
+        if (getPasswordC().isBlank()) {
+            vista.lblerrPasswordC.setText("*Opción obligatoria");
+            validacion = true;
+        } else if (getPasswordC().length() > 20) {
+            vista.lblerrPasswordC.setText("*Máximo 20 caracteres");
+            validacion = true;
+        } else if (!getPassword().equals(getPasswordC())) { // Validar que coincidan
+            vista.lblerrPasswordC.setText("*Las contraseñas no coinciden");
+            validacion = true;
         }
-        return false;
+
+        // Validar número de teléfono
+        if (getNumPhone().isBlank()) {
+            vista.lblerrnumberPhone.setText("*Opción obligatoria");
+            validacion = true;
+        } else if (!getNumPhone().matches("^\\d{10}$")) { // Validar 10 dígitos
+            vista.lblerrnumberPhone.setText("*Solo dígitos y 10 caracteres");
+            validacion = true;
+        }
+
+        // Validar edad
+        if (getAge() < 16 || getAge() > 100) {
+            vista.lblerrAge.setText("*Tienes que ser mayor de 16 años y menor de 100");
+            validacion = true;
+        }
+
+        // Devolver el resultado de la validación
+        return validacion;
     }
 
 }
