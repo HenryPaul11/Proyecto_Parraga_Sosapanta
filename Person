@@ -2,12 +2,21 @@ package Model;
 
 public abstract class Person {
 
-    private String email, password, dni;
+    private String names, email, password, dni;
 
-    public Person(String email, String password, String dni) {
+    public Person(String names, String email, String password, String dni) {
+        this.names = names;
         this.email = email;
         this.password = password;
         this.dni = dni;
+    }
+
+    public String getNames() {
+        return names;
+    }
+
+    public void setNames(String names) {
+        this.names = names;
     }
 
     public String getEmail() {
@@ -34,5 +43,5 @@ public abstract class Person {
         this.dni = dni;
     }
 
-    public abstract String Validate(String email, String password);
+    public abstract boolean Validate();
 }
