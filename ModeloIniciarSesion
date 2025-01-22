@@ -1,7 +1,7 @@
 package Model;
 
 import org.bson.Document;
-import Conecction.ConnectionMongo;
+import Connection.ConnectionMongo;
 import org.bson.Document;
 
 public class ModeloIniciarSesion {
@@ -11,10 +11,10 @@ public class ModeloIniciarSesion {
     //CREAMOS UN OBJETO PARA ACCEDER A LOS METODOS DE LA CONECCION A MONGO Y PODER BUSCAR LAS CREDENCIALES
     ConnectionMongo mongoDB = new ConnectionMongo();
 
-    private String emailAdmin = "administrador@gmail.com";
-    private String passwordAdmin = "Administrador2024";
-    private String emailClient = "";
-    private String passwordClient = "";
+    private String emailAdmin = "admin@gmail.com";
+    private String passwordAdmin = "Admin2024";
+    private String emailClient = "client@gmail.com";
+    private String passwordClient = "Client2024";
     private String emailIngresado, passwordIngresado;
     private boolean isValid = true;
 
@@ -34,24 +34,42 @@ public class ModeloIniciarSesion {
         this.password = password;
     }
 
-    public String Validate() {
-        //SI USAMOS LAS CREDENCIALES DE ADMINISTRADOR, NOS INGRESARA A LAS VENTANAS DE ADMINISTRADOR
+    public String Validate(String email, String password) {
+        // Verificar credenciales del administrador
         if (emailAdmin.equals(email) && passwordAdmin.equals(password)) {
             return "admin";
-            //CASO CONTRARIO, INGRESERAMOS A LAS VENTANAS A LAS QUE PUEDE ACCEDER EL CLIENTE
-        } else {
-            //INGRESAREMOS A LA COLECCION DONDE SE ENCONTRARAN LAS CREDENCIALES
-            mongoDB.setNameCollection("Clientes");
-            //BUSACAREMOS LSO DATOS EN EL DOCUMENTO POR CORREO Y CONTRASEÑA
-            Document query = new Document("Correo", email).append("password", password);
-            //SI LO ENCONTRAMOS NOS DARA UN RESULTADO
-            Document result = mongoDB.findDocument(query);
-            //SI ELR ESULTADO QUE NOS ES DIFERENTE DE NULO, ENTONCES ACCEDEREMOS A LAS VENTANAS DE LOS CLIENTES
-            if (result != null) {
-                return "client";
-            }
         }
-        //SI TODO FALLA NOS RETORNARA ALGO INVALIDO, QUIERE DECIR QUE NO PODREMOS INGRESAR A NINGUN SITIO
+
+        // Configurar la colección a "Clientes"
+        mongoDB.setNameCollection("Clientes");
+
+        // Crear la consulta utilizando las claves correctas
+        Document query = new Document("Correo", email).append("Contraseña", password);
+
+        // Buscar en la base de datos
+        Document result = mongoDB.findDocument(query);
+
+        // Verificar si la consulta tuvo éxito
+        if (result != null) {
+            return "client";
+        }
+
+        // Si no es admin ni cliente, credenciales inválidas
         return "invalid";
+    }
+
+    public boolean signin(String email) {
+        Document doc = new Document("Correo", email);
+        mongoDB.setNameCollection("Sesiones");
+        boolean sesionExists = !mongoDB.readDocument(doc).isEmpty();
+        System.out.println(sesionExists);
+        if (!sesionExists) {
+            int sesionID = mongoDB.readDocument(new Document()).size();
+            doc.append("ID", sesionID);
+            mongoDB.createDocument(doc);
+            mongoDB.setNameCollection("Clientes");
+            return false;
+        }
+        return true;
     }
 }
