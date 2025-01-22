@@ -1,10 +1,16 @@
 package Controller;
 
-import Conecction.ConnectionMongo;
+import Connection.ConnectionMongo;
 import Model.ModeloAggPersonal;
+import Model.ModeloInicioPrincipal;
 import View.AgregarPersonal;
+import View.InicioPrincipal;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import org.bson.Document;
 
 public class ControladorAggPersonal implements ActionListener {
 //
@@ -13,22 +19,37 @@ public class ControladorAggPersonal implements ActionListener {
     private ModeloAggPersonal modelo = new ModeloAggPersonal("", "", "", "", "", "", "");
     private ConnectionMongo mongo = new ConnectionMongo();
 
-    public ControladorAggPersonal(AgregarPersonal vista, ModeloAggPersonal modelo) {
+    public ControladorAggPersonal() {
         this.vista = vista;
         this.modelo = modelo;
-
+        mongo.createConecction();
+        mongo.setNameCollection("Conductores");
+        tablaPersonal();
         //INICIALIZAR LOS BOTONES
         this.vista.BtnSave.addActionListener(this);
         this.vista.BtnClean.addActionListener(this);
         this.vista.BtnDelete.addActionListener(this);
         this.vista.BtnEdit.addActionListener(this);
         this.vista.BtnExit.addActionListener(this);
-        this.vista.BtnSearch.addActionListener(this);
+        this.vista.BtnFind.addActionListener(this);
 
     }
 
+    boolean isUpdate = false;
+
     public void starView() {
         vista.setVisible(true);
+        tablaPersonal();
+    }
+
+    public void tablaPersonal() {
+        DefaultTableModel tabla = mongo.cargarTablaPersonal();
+        vista.TbtPerson.setModel(tabla);
+    }
+
+    private void LimpiarTab() {
+        DefaultTableModel modelo = (DefaultTableModel) vista.TbtPerson.getModel();
+        modelo.setRowCount(0);
     }
 
     public void btnSave() {
@@ -43,30 +64,232 @@ public class ControladorAggPersonal implements ActionListener {
             genero = vista.CbxGenre.getSelectedItem().toString();
         }
 
+        modelo.setBrand(marca);
+        modelo.setColor(color);
+        modelo.setDni(cedula);
+        modelo.setGenre(genero);
+        modelo.setNames(nombres);
+        modelo.setNumPhone(celular);
+        modelo.setPlate(placa);
+
+        boolean band = modelo.validationData(vista);
+
+        if (band) {
+            if (!isUpdate) {
+                //CREA
+                Document doc = new Document("Cédula", modelo.getDni());
+                Document doc2 = new Document("Celular", modelo.getNumPhone());
+                Document doc3 = new Document("Placa", modelo.getPlate());
+
+                // Verificar si ya existe la cédula, celular o placa
+                if (mongo.readDocument(doc).isEmpty() && mongo.readDocument(doc2).isEmpty() && mongo.readDocument(doc3).isEmpty()) {
+                    doc = new Document("Nombres", modelo.getNames())
+                            .append("Cédula", modelo.getDni())
+                            .append("Celular", modelo.getNumPhone())
+                            .append("Placa", modelo.getPlate())
+                            .append("Marca", modelo.getBrand())
+                            .append("Color", modelo.getColor())
+                            .append("Género", modelo.getGenre());
+                    mongo.createDocumentConductores(doc);
+                    modelo.mostrarDatos();
+                    tablaPersonal();
+                    JOptionPane.showMessageDialog(vista, "Persona agregada con éxito");
+                } else {
+                    JOptionPane.showMessageDialog(vista, "La cédula, celular o placa ya existe en nuestra base");
+                }
+            } else {
+                //ACTUALIZA
+                Document oldDocument = new Document("Cédula", modelo.getDni());
+                Document doc = new Document("Cédula", modelo.getDni())
+                        .append("Nombres", modelo.getNames())
+                        .append("Género", modelo.getGenre())
+                        .append("Celular", modelo.getNumPhone())
+                        .append("Placa", modelo.getPlate())
+                        .append("Marca", modelo.getBrand())
+                        .append("Color", modelo.getColor());
+                mongo.updateDocumentConductores(oldDocument, doc);
+                tablaPersonal();
+                JOptionPane.showMessageDialog(vista, "Persona actualizada con éxito");
+                isUpdate = false;
+                vista.BtnSave.setText("GUARDAR");
+            }
+        } else {
+            System.out.println("Campos inválidos");
+        }
     }
 
     public void btnEdit() {
+        DefaultTableModel tabla = (DefaultTableModel) vista.TbtPerson.getModel();
+        int filaSelect = vista.TbtPerson.getSelectedRow();
 
+        if (filaSelect != -1) {
+            String cedula = (String) tabla.getValueAt(filaSelect, 0);
+            String nombres = (String) tabla.getValueAt(filaSelect, 1);
+            String genero = (String) tabla.getValueAt(filaSelect, 2);
+            String celular = (String) tabla.getValueAt(filaSelect, 3);
+            String placa = (String) tabla.getValueAt(filaSelect, 4);
+            String marca = (String) tabla.getValueAt(filaSelect, 5);
+            String color = (String) tabla.getValueAt(filaSelect, 6);
+
+            // Establecer los valores en los campos de texto
+            vista.TxtBrand.setText(marca);
+            vista.TxtDni.setText(cedula);
+            vista.TxtDni.setEnabled(false);
+            vista.TxtColor.setText(color);
+            vista.TxtNames.setText(nombres);
+            vista.TxtNumPhone.setText(celular);
+            vista.TxtPlate.setText(placa);
+            vista.TxtPlate.setEnabled(false);
+            // Establecer el valor del combo box
+            for (int i = 0; i < vista.CbxGenre.getItemCount(); i++) {
+                if (vista.CbxGenre.getItemAt(i).equals(genero)) {
+                    vista.CbxGenre.setSelectedIndex(i);
+                    break; // Salir del bucle una vez encontrado
+                }
+            }
+
+            isUpdate = true;
+            vista.BtnSave.setText("ACTUALIZAR");
+        } else {
+            JOptionPane.showMessageDialog(vista, "Debe seleccionar una fila para editar", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public void btnFind() {
+        if (vista.BtnFind.getText().equals("BUSCAR")) {
+            vista.BtnFind.setText("CANCELAR");
+            String cedula = JOptionPane.showInputDialog(vista, "Ingrese la cédula a buscar:");
 
+            // Validar la entrada
+            if (cedula == null || cedula.isEmpty()) {
+                JOptionPane.showMessageDialog(vista, "Búsqueda cancelada.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                vista.BtnFind.setText("BUSCAR");
+                return;
+            } else if (cedula.length() != 10) {
+                JOptionPane.showMessageDialog(vista, "La cédula debe tener 10 dígitos.", "Error", JOptionPane.ERROR_MESSAGE);
+                vista.BtnFind.setText("BUSCAR");
+                return;
+            }
+
+            // Filtro para buscar por cédula
+            Document filtro = new Document("Cédula", cedula);
+            try {
+                List<Document> results = mongo.readDocument(filtro);
+                LimpiarTab();
+                if (results != null && !results.isEmpty()) {
+                    DefaultTableModel tabla = (DefaultTableModel) vista.TbtPerson.getModel();
+                    for (Document document : results) {
+                        tabla.addRow(new Object[]{
+                            document.getString("Cédula"),
+                            document.getString("Nombres"),
+                            document.getString("Género"),
+                            document.getString("Celular"),
+                            document.getString("Placa"),
+                            document.getString("Marca"),
+                            document.getString("Color")
+                        });
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(vista, "No se encontraron usuarios.", "Búsqueda", JOptionPane.WARNING_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(vista, "Error al buscar datos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            vista.BtnFind.setText("BUSCAR");
+            LimpiarTab();
+            tablaPersonal();
+        }
     }
 
     public void btnDelete() {
+        int filaSeleccionada = vista.TbtPerson.getSelectedRow();
+        if (filaSeleccionada < 0) {
+            JOptionPane.showMessageDialog(vista, "Debe seleccionar una fila para eliminar", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
+        // Obtener los valores de la fila seleccionada
+        String cedula = vista.TbtPerson.getValueAt(filaSeleccionada, 0).toString();
+
+        // Crear el filtro para encontrar el documento en MongoDB
+        Document filtro = new Document("Cédula", cedula);
+
+        // Confirmación de eliminación
+        int confirmacion = JOptionPane.showConfirmDialog(
+                vista,
+                "¿Está seguro de eliminar este registro?",
+                "Confirmación de eliminación",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirmacion != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // Llamar al método de eliminación de MongoDB
+        boolean eliminado = mongo.deleteDocumentConductores(filtro);
+        if (eliminado) {
+            // Eliminar la fila de la tabla y actualizar la tabla
+            DefaultTableModel modeloT = (DefaultTableModel) vista.TbtPerson.getModel();
+            modeloT.removeRow(filaSeleccionada);
+            tablaPersonal(); // Actualizar la tabla
+            JOptionPane.showMessageDialog(vista, "Registro eliminado con éxito", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(vista, "Error al eliminar el registro", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public void btnClean() {
+        //LIMPIAR VALIDADORES
+        vista.LbValidationBrand.setText(" ");
+        vista.LbValidationColor.setText(" ");
+        vista.LbValidationDni.setText(" ");
+        vista.LbValidationGenre.setText(" ");
+        vista.LbValidationNames.setText(" ");
+        vista.LbValidationPhone.setText(" ");
+        vista.LbValidationPlate.setText(" ");
+
+        //LIMPIAR CAJAS DE TEXTO
+        vista.TxtBrand.setText("");
+        vista.TxtColor.setText("");
+        vista.TxtDni.setText("");
+        vista.TxtNames.setText("");
+        vista.TxtNumPhone.setText("");
+        vista.TxtPlate.setText("");
+        vista.CbxGenre.setSelectedIndex(-1);
 
     }
 
     public void btnExit() {
-
+        InicioPrincipal vistaP = new InicioPrincipal();
+        ModeloInicioPrincipal modeloP = new ModeloInicioPrincipal("", 0);
+        ControladorInicioPrincipal controlLogin = new ControladorInicioPrincipal(vistaP, modeloP);
+        controlLogin.starView();
+        vista.setVisible(false);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == vista.BtnSave) {
+            btnSave();
+        }
+        if (e.getSource() == vista.BtnEdit) {
+            btnEdit();
+        }
+        if (e.getSource() == vista.BtnDelete) {
+            btnDelete();
+        }
+        if (e.getSource() == vista.BtnFind) {
+            btnFind();
+        }
+        if (e.getSource() == vista.BtnClean) {
+            btnClean();
+        }
+        if (e.getSource() == vista.BtnExit) {
+            btnExit();
+        }
+
     }
 
 }
