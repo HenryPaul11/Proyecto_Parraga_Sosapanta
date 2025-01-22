@@ -1,0 +1,71 @@
+package Model;
+
+import View.InicioPrincipal;
+import org.bson.Document;
+import Connection.ConnectionMongo;
+
+public class ModeloInicioPrincipal {
+
+    //ATRIBUTOS DE LA VISTA INCIO
+    private String travel;   //travel= Viajar
+    private int tickets;
+    private ConnectionMongo mongo;
+
+    public ModeloInicioPrincipal(String travel, int tickets) {
+        this.tickets = tickets;
+        this.travel = travel;
+
+    }
+    //GET Y SETS DE LA CLASE MODELO
+
+    public String getTravel() {
+        return travel;
+    }
+
+    public void setTravel(String travel) {
+        this.travel = travel;
+    }
+
+    public int getTickets() {
+        return tickets;
+    }
+
+    public void setTickets(int tickets) {
+        this.tickets = tickets;
+    }
+
+    //VALIDACIONES DE LA VISTA
+    public boolean validarDatos(InicioPrincipal vista) {
+        boolean validacion = false;
+        //SE REINICIA LOS " "
+        vista.LbValidationDest.setText(" ");
+        vista.LbValidationTickets.setText(" ");
+
+        if (getTravel().isBlank()) {
+            vista.LbValidationDest.setText("*Ingresa el lugar de tu viaje");
+            validacion = true;
+        }
+
+        if (getTickets() < 0 || getTickets() > 4) {
+            vista.LbValidationTickets.setText("*Recuerda que puedes comprar solo hasta 4");
+            validacion = true;
+        } else if (getTickets() == 0) {
+            vista.LbValidationTickets.setText("*Campo obligatorio");
+            validacion = true;
+        }
+        return validacion;
+    }
+
+    public boolean verifYSession(String email) {
+        Document query = new Document("Correo", email);
+        mongo.setNameCollection("Sesiones");
+        boolean sesionExists = !mongo.readDocument(query).isEmpty();
+        return sesionExists;
+    }
+
+    public double precioBoleto() {
+        double precio = 20.00;
+        double costoPago = precio * tickets; // Precio fijo por persona
+        return costoPago; // Retorna el costo calculado
+    }
+}
