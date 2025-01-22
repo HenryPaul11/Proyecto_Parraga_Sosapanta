@@ -1,7 +1,8 @@
 package Controller;
 
-import Conecction.ConnectionMongo;
-import Model.Cliente;
+import Connection.ConnectionMongo;
+import Controller.ControladorAggPersonal;
+import Controller.ControladorInicioPrincipal;
 import Model.ModeloAggPersonal;
 import Model.ModeloInicioPrincipal;
 import Model.ModeloPrincipalAdmin;
@@ -15,20 +16,19 @@ import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import org.bson.Document;
-import Controller.ControladorAggPersonal;
 
 public class ControladorPrincipalAdmin implements ActionListener {
 
-    private PrincipalAdmin vista = new PrincipalAdmin();
-    private AgregarPersonal aggPersonal = new AgregarPersonal();
-    private ModeloPrincipalAdmin modelo = new ModeloPrincipalAdmin("", "", "", "");
+    private PrincipalAdmin vista;
+    private ModeloPrincipalAdmin modelo;
     private ConnectionMongo mongo = new ConnectionMongo();
-    private ControladorAggPersonal controladorAggPersonal;
 
     public ControladorPrincipalAdmin(PrincipalAdmin vista, ModeloPrincipalAdmin modelo) {
         this.vista = vista;
         this.modelo = modelo;
-
+        mongo.createConecction();
+        System.out.println("Hola");
+        tablaAdmin();
         //INICIALIZAR LOS BOTONES
         this.vista.BtnSave.addActionListener(this);
         this.vista.BtnClean.addActionListener(this);
@@ -38,9 +38,11 @@ public class ControladorPrincipalAdmin implements ActionListener {
         this.vista.BtnFind.addActionListener(this);
         this.vista.BtnAggPerson.addActionListener(this);
     }
+
     boolean isUpdate = false;
 
     public void starView() {
+        System.out.println("Hola wie");
         vista.setVisible(true);
     }
 
@@ -77,11 +79,12 @@ public class ControladorPrincipalAdmin implements ActionListener {
                 //CREA
                 Document doc = new Document("Conductor", modelo.getDriver());
                 if (mongo.readDocument(doc).isEmpty()) {
-                    doc = new Document("Conductor", modelo.getDriver())
-                            .append("Hora de salida", modelo.getTimeEnd())
-                            .append("Salida", modelo.getTravelHome())
-                            .append("Llegada", modelo.getTravelEnd());
+                    doc = new Document("Inicio", modelo.getTravelHome())
+                            .append("Llegada", modelo.getTravelEnd())
+                            .append("Conductor", modelo.getDriver())
+                            .append("Hora de salida", modelo.getTimeEnd());
                     mongo.createDocument(doc);
+                    modelo.mostrarDatos();
                     tablaAdmin();
                     JOptionPane.showMessageDialog(vista, "Horario guardado con éxito");
                 } else {
@@ -97,7 +100,7 @@ public class ControladorPrincipalAdmin implements ActionListener {
                         .append("Hora de salida", modelo.getTimeEnd())
                         .append("Salida", modelo.getTravelHome())
                         .append("Llegada", modelo.getTravelEnd());
-                mongo.createDocument(doc);
+                mongo.updateDocument(oldDocument, doc);
                 tablaAdmin();
                 JOptionPane.showMessageDialog(vista, "Horario guardado con éxito");
             }
@@ -107,7 +110,6 @@ public class ControladorPrincipalAdmin implements ActionListener {
     }
 
     public void btnEdit() {
-        Document docHorarios = new Document();
         DefaultTableModel tabla = (DefaultTableModel) vista.TbtAdmin.getModel();
         int filaSelect = vista.TbtAdmin.getSelectedRow();
 
@@ -176,7 +178,7 @@ public class ControladorPrincipalAdmin implements ActionListener {
                             getDoc.getString("Inicio"),
                             getDoc.getString("Llegada"),
                             getDoc.getString("Conductor"),
-                            getDoc.getString("Hora de Salida")
+                            getDoc.getString("Hora de salida")
                         });
                     }
                 } else {
@@ -200,12 +202,12 @@ public class ControladorPrincipalAdmin implements ActionListener {
         }
         int opcion = JOptionPane.showConfirmDialog(null, "¿Está seguro de eliminar este registro?", "Confirmación", JOptionPane.YES_NO_OPTION);
         if (opcion == JOptionPane.YES_OPTION) {
-            // Obtener la cédula del registro seleccionado
-            String cedula = vista.TbtAdmin.getValueAt(filaSeleccionada, 0).toString();
+            // Obtener el nombre del registro seleccionado
+            String conductor = vista.TbtAdmin.getValueAt(filaSeleccionada, 0).toString();
             // Crear el filtro para eliminar en MongoDB
-            Document filtro = new Document("Cedula", cedula);
+            Document filtro = new Document("Conductor", conductor);
             // Llamar al método para eliminar en MongoDB
-            boolean eliminado = mongo.deleteDocumet(filtro);
+            boolean eliminado = mongo.deleteDocument(filtro);
             if (eliminado) {
                 // Eliminar la fila de la tabla
                 DefaultTableModel modelo = (DefaultTableModel) vista.TbtAdmin.getModel();
@@ -234,15 +236,19 @@ public class ControladorPrincipalAdmin implements ActionListener {
     }
 
     public void btnExit() {
-        InicioPrincipal vista = new InicioPrincipal();
-        ModeloInicioPrincipal modelo = new ModeloInicioPrincipal("", 0);
-        ControladorInicioPrincipal inicio = new ControladorInicioPrincipal(vista, modelo);
-        inicio.starView();
+        InicioPrincipal vistaP = new InicioPrincipal();
+        ModeloInicioPrincipal modeloP = new ModeloInicioPrincipal("", 0);
+        ControladorInicioPrincipal controlLogin = new ControladorInicioPrincipal(vistaP, modeloP);
+        controlLogin.starView();
+        vista.setVisible(false);
     }
 
     public void btnAggPerson() {
+        AgregarPersonal vistaPerson = new AgregarPersonal();
+        ModeloAggPersonal modeloPerson = new ModeloAggPersonal("", "", "", "", "", "", "");
+        ControladorAggPersonal aggpersonal = new ControladorAggPersonal();
+        aggpersonal.starView();
         vista.setVisible(false);
-        controladorAggPersonal.starView();
     }
 
     @Override
@@ -271,4 +277,3 @@ public class ControladorPrincipalAdmin implements ActionListener {
     }
 
 }
-    
