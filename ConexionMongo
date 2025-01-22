@@ -1,30 +1,36 @@
-import com.mongodb.client.MongoClient;
+package Connection;
+
 import com.mongodb.MongoException;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.UpdateOneModel;
-import org.bson.Document;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import javax.swing.table.DefaultTableModel;
+import org.bson.Document;
+import Model.ModeloInicioPrincipal;
+import View.InicioPrincipal;
 import javax.swing.JOptionPane;
 
-public class ConexionMongoDB {
+public class ConnectionMongo {
 
     private String nameDatabase = "ViajesProyecto";//Creamos el nombre de la base de datos
-    private String nameCollection = "";//Creamos el nombre de la colleccion
-    private MongoClient mongoClient = null;//Creamos el cliente de la base de datos
+    private String nameCollection = "Viajes";//Creamos el nombre de la colleccion
+    private String nameCollection2 = "Conductores";//Creamos el nombre de la colleccion
+    String nameCollectionCombinado = "viajesGuardados";
     private MongoDatabase mongoDatabase = null;//Creamos la base de datos
     MongoCollection<Document> collection;//Creamos los documentos de la colleccion
     //CREAMOS LA CONECCION CON LA BASE DE DATOS QUE TENEMOS
+    private ModeloInicioPrincipal modelo = new ModeloInicioPrincipal(nameDatabase, 0);
 
     public MongoDatabase createConecction() {
         try {
-            mongoClient = MongoClients.create("mongodb://localhost:27017/");
+            MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017/");
             mongoDatabase = mongoClient.getDatabase(nameDatabase);
+            System.out.println("Conexión establecida con la base de datos: " + nameDatabase);
         } catch (MongoException e) {
-            e.printStackTrace();
+            System.err.println("Error al conectar con MongoDB: " + e.getMessage());
         }
         return mongoDatabase;
     }
@@ -33,22 +39,15 @@ public class ConexionMongoDB {
         this.nameCollection = nameCollection;
     }
 
-    //CREAMOS LO GETTER Y SETTER DE LOS DOCUMENTOS DE LA COLLECCION
-    public MongoCollection<Document> getCollection() {
-        return collection;
-    }
-
-    public void setCollection(MongoCollection<Document> collection) {
-        this.collection = collection;
-    }
-
-    //AQUI EMPEZAREMOS A REALIZAR EL CRUD, EMPEZAMOS POR EL METODO DE CREAR
+    //CRUD
+    // Crear documento en la colección de "Viajes"
     public boolean createDocument(Document document) {
         try {
-            mongoDatabase = createConecction();//Instanciamos la base de datos con la coneccion
+            mongoDatabase = createConecction();
             if (mongoDatabase != null) {
                 MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection);
-                collection.insertOne(document);//Insertamos el documento a la base de datos
+                collection.insertOne(document);  // Inserta el documento en la colección "Viajes"
+                return true;
             }
         } catch (MongoException e) {
             e.printStackTrace();
@@ -56,36 +55,83 @@ public class ConexionMongoDB {
         return false;
     }
 
-    public List<Document> readDocument(Document document) {
-        ArrayList<Document> results = new ArrayList<>();
+    // Crear documento en la colección de "Conductores"
+    public boolean createDocumentConductores(Document document) {
         try {
-            mongoDatabase = createConecction();
+            mongoDatabase = createConecction();  // Asegura que la base de datos se esté conectando
             if (mongoDatabase != null) {
-                MongoCollection<Document> collectionResult = mongoDatabase.getCollection(nameCollection);
-                collectionResult.find(document).into(results);
+                MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection2);
+                collection.insertOne(document);  // Inserta el documento en la colección "Conductores"
+                return true;
             }
-            return results;
         } catch (MongoException e) {
-            System.out.println("SIN DATOS");
             e.printStackTrace();
         }
-        return null;
+        return false;
     }
 
-    public boolean updateDocument(Document document, Document newDocument) {
+    // Leer documentos de la colección de "Viajes"
+    public ArrayList<Document> readDocument(Document document) {
+        ArrayList<Document> results = new ArrayList<>();
+        try {
+            if (mongoDatabase == null) {
+                mongoDatabase = createConecction();  // Reconectar si es necesario
+            }
+            MongoCollection<Document> collectionResult = mongoDatabase.getCollection(nameCollection);
+            collectionResult.find(document).into(results);
+        } catch (MongoException e) {
+            System.err.println("Error al leer documentos: " + e.getMessage());
+        }
+        return results;
+    }
+
+    // Leer documentos de la colección de "Conductores"
+    public ArrayList<Document> readDocumentConductores(Document document) {
+        ArrayList<Document> results = new ArrayList<>();
+        try {
+            if (mongoDatabase == null) {
+                mongoDatabase = createConecction();  // Reconectar si es necesario
+            }
+            MongoCollection<Document> collectionResult = mongoDatabase.getCollection(nameCollection2);
+            collectionResult.find(document).into(results);
+        } catch (MongoException e) {
+            System.err.println("Error al leer documentos: " + e.getMessage());
+        }
+        return results;
+    }
+
+    // Actualizar documentos de la colección de "Viajes"
+    public boolean updateDocument(Document filtro, Document newDocument) {
         try {
             mongoDatabase = createConecction();
             if (mongoDatabase != null) {
                 MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection);
+                // Asegúrate de que newDocument esté envuelto en el operador $set
+                collection.updateOne(filtro, new Document("$set", newDocument));
+                return true; // Actualización exitosa
+            }
+        } catch (MongoException e) {
+            e.printStackTrace();
+        }
+        return false; // En caso de fallo
+    }
+
+    // Actualizar documentos de la colección de "Conductores"
+    public boolean updateDocumentConductores(Document document, Document newDocument) {
+        try {
+            mongoDatabase = createConecction();
+            if (mongoDatabase != null) {
+                MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection2);
                 collection.updateOne(document, new Document("$set", newDocument));
             }
         } catch (MongoException e) {
-
+            e.printStackTrace();
         }
         return false;
     }
 
-    public boolean deleteDocumet(Document document) {
+    // Eliminar documentos de la colección de "Viajes"
+    public boolean deleteDocument(Document document) {
         try {
             mongoDatabase = createConecction();
             if (mongoDatabase != null) {
@@ -93,13 +139,29 @@ public class ConexionMongoDB {
                 collection.deleteOne(document);
             }
         } catch (MongoException e) {
-
+            e.printStackTrace();
         }
         return false;
     }
 
-    public List<Document> getAllDocuments() {
-        List<Document> documents = new ArrayList<>();
+    // Eliminar documentos de la colección de "Conductores"
+    public boolean deleteDocumentConductores(Document document) {
+        try {
+            mongoDatabase = createConecction();
+            if (mongoDatabase != null) {
+                MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection2);
+                collection.deleteOne(document);
+                return true;  // Confirmar eliminación exitosa
+            }
+        } catch (MongoException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Obtener todos los documentos de la colección "Viajes"
+    public ArrayList<Document> getAllDocuments() {
+        ArrayList<Document> documents = new ArrayList<>();
         try {
             mongoDatabase = createConecction();
             if (mongoDatabase != null) {
@@ -112,29 +174,17 @@ public class ConexionMongoDB {
         return documents;
     }
 
-    public List<Document> findDocuments(Document filtro) {
-        List<Document> documents = new ArrayList<>();
+    // Obtener todos los documentos de la colección "Conductores"
+    public ArrayList<Document> getAllDocumentsConductores() {
+        ArrayList<Document> documents = new ArrayList<>();
         try {
             mongoDatabase = createConecction();
             if (mongoDatabase != null) {
-                MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection);
-                collection.find(filtro).into(documents);
+                MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection2);
+                collection.find().into(documents);
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        return documents;
-    }
-
-    public List<Document> searchDocument(Document aux) {
-        List<Document> documents = new ArrayList<>();
-        try {
-            MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollection);
-            for (Document doc : collection.find()) {
-                documents.add(doc);
-            }
-        } catch (Exception e) {
-            System.out.println("Error al buscar los documentos");
         }
         return documents;
     }
@@ -152,4 +202,123 @@ public class ConexionMongoDB {
         }
         return null;  // Si no se encuentra ningún documento, se retorna null
     }
+
+    public Document findDocumentConductores(Document filtro) {
+        MongoCollection<Document> collection = null;
+        try {
+            mongoDatabase = createConecction();
+            if (mongoDatabase != null) {
+                collection = mongoDatabase.getCollection(nameCollection2);
+                return collection.find(filtro).first();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;  // Si no se encuentra ningún documento, se retorna null
+    }
+
+    public DefaultTableModel cargarTabla() {
+        Document doc = new Document();
+        ArrayList<Document> resultado = readDocument(doc);
+        String[] columnas = {"Inicio", "Llegada", "Conductor", "Salida"};
+        DefaultTableModel tabla = new DefaultTableModel(columnas, 0);
+        for (Document getDoc : resultado) {
+            Object[] row = {
+                getDoc.getString("Inicio"),
+                getDoc.getString("Llegada"),
+                getDoc.getString("Conductor"),
+                getDoc.getString("Hora de salida"),};
+            tabla.addRow(row);
+        }
+        return tabla;
+    }
+
+    public DefaultTableModel cargarTablaPersonal() {
+        Document doc = new Document();
+        ArrayList<Document> resultado = readDocument(doc);
+        String[] columnas = {"Cédula", "Nombres", "Género", "Celular", "Placa", "Marca", "Color"};
+        DefaultTableModel tabla = new DefaultTableModel(columnas, 0);
+        for (Document getDoc : resultado) {
+            Object[] row = {
+                getDoc.getString("Cédula"),
+                getDoc.getString("Nombres"),
+                getDoc.getString("Género"),
+                getDoc.getString("Celular"),
+                getDoc.getString("Placa"),
+                getDoc.getString("Marca"),
+                getDoc.getString("Color"),};
+            tabla.addRow(row);
+        }
+        return tabla;
+    }
+
+    public boolean createDocumentCombinado(Document document) {
+        try {
+            mongoDatabase = createConecction();
+            if (mongoDatabase != null) {
+                MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollectionCombinado);
+                collection.insertOne(document);  // Inserta el documento en la colección "Combinado"
+                return true;
+            }
+        } catch (MongoException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public ArrayList<Document> getAllDocumentsCombinado() {
+        ArrayList<Document> documents = new ArrayList<>();
+        try {
+            mongoDatabase = createConecction();
+            if (mongoDatabase != null) {
+                MongoCollection<Document> collection = mongoDatabase.getCollection(nameCollectionCombinado);
+                collection.find().into(documents);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return documents;
+    }
+
+    public DefaultTableModel cargarTablaCombinada() {
+        // Obtener datos de las colecciones
+        ArrayList<Document> viajes = getAllDocuments(); // Viajes
+        ArrayList<Document> conductores = getAllDocumentsConductores(); // Conductores
+
+        // Columnas combinadas
+        String[] columnas = {"Inicio", "Llegada", "Hora de salida", "Placa", "Marca", "Color", "Género", "Conductor", "Celular", "Total a Pagar"};
+        DefaultTableModel tablaCombinada = new DefaultTableModel(columnas, 0);
+
+        // Recorrer los documentos de viajes
+        for (Document viaje : viajes) {
+            // Buscar conductor asociado
+            String conductorNombre = viaje.getString("Conductor"); // Relación por nombre de conductor
+            Document conductor = findDocumentConductores(new Document("Nombres", conductorNombre));
+
+            if (conductor != null) {
+                // Calcular el total
+                InicioPrincipal inicioPrincipal = new InicioPrincipal();
+                double precioPagar = inicioPrincipal.precioBoleto(viaje);
+
+                // Combinar los datos en una fila, respetando el orden de las columnas
+                Object[] row = {
+                    viaje.getString("Inicio"), // Inicio del viaje
+                    viaje.getString("Llegada"), // Llegada del viaje
+                    viaje.getString("Hora de salida"), // Hora de salida
+                    conductor.getString("Placa"), // Placa del vehículo
+                    conductor.getString("Marca"), // Marca del vehículo
+                    conductor.getString("Color"), // Color del vehículo
+                    conductor.getString("Género"), // Género del conductor
+                    viaje.getString("Conductor"), // Nombre del conductor
+                    conductor.getString("Celular"), // Celular del conductor
+                    precioPagar // Total a pagar
+                };
+
+                tablaCombinada.addRow(row); // Agregar la fila
+            }
+        }
+
+        return tablaCombinada;
+    }
+
 }
