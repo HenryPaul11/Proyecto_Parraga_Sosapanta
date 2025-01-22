@@ -1,53 +1,90 @@
 package Controller;
 
-import org.bson.Document;
-import Conecction.ConecctionMongo;
-import Model.ModeloRegistrocliente;
-import Model.Person;
+import Connection.ConnectionMongo;
+import Model.ModeloIniciarSesion;
+import Model.ModeloRegistrarCliente;
+import View.IniciarSesion;
+import View.RegistroCliente;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import View.RegistroCliente;
-import View.IniciarSesion;
+import javax.swing.JOptionPane;
 
+public class ControladorRegistroCliente implements ActionListener {
 
-public class ControladorRegistroCliente implements ActionListener{
+    private RegistroCliente vista;
+    private ModeloRegistrarCliente modelo;
+    private ConnectionMongo mongo = new ConnectionMongo();
 
-    private Document document = new Document();
-    ConecctionMongo conecctionMongo = new ConecctionMongo();
-    ModeloRegistrocliente modeloRegistrocliente = new ModeloRegistrocliente("", "", 0, "", "", "", "", "");
-    RegistroCliente registroClientes = new RegistroCliente();
-    IniciarSesion iniciarSesion = new IniciarSesion();
-    
-    public ControladorRegistroCliente() {
-        this.registroClientes.btnRegister.addActionListener(this);
-        this.registroClientes.btnLogin.addActionListener(this);
+    public ControladorRegistroCliente(RegistroCliente vista, ModeloRegistrarCliente modelo) {
+        this.vista = vista;
+        this.modelo = modelo;  // Solo mantén esta línea, elimina la siguiente inicialización
+        this.vista.BtnLogin.addActionListener(this);
+        this.vista.BtnRegister.addActionListener(this);
     }
 
-    public boolean saveClient() {
-        conecctionMongo.setNameCollection("clientes");
-        //getNameC(), getId(),getLastnamec(), age, getPasswordC()
-        document.append("Nombre", modeloRegistrocliente.getName());
-        document.append("Apellido", modeloRegistrocliente.getLastname());
-        document.append("Cedula", modeloRegistrocliente.getDni());
-        document.append("Tlf. Movil", modeloRegistrocliente.getNumPhone());
-        document.append("Correo", modeloRegistrocliente.getEmail());
-        document.append("Contraseña", modeloRegistrocliente.getPassword());
-        document.append("Cfm Contraseña", modeloRegistrocliente.getPasswordC());
-        document.append("Edad", String.valueOf(modeloRegistrocliente.getAge()));
-        return conecctionMongo.createDocument(document);
+    public void startView() {
+        vista.setVisible(true);
     }
 
-    public void login(){
-        registroClientes.setVisible(false);
-        iniciarSesion.setVisible(true);
+    private void btnRegister() {
+        try {
+            // Obtener datos de la vista y asignarlos al modelo
+            modelo.setNames(vista.txtName.getText().trim());
+            modelo.setDni(vista.txtDni.getText().trim());
+            modelo.setNumPhone(vista.txtnumPhone.getText().trim());
+            modelo.setEmail(vista.txtEmail.getText().trim());
+            modelo.setPassword(new String(vista.pasPassword.getPassword()).trim());
+            modelo.setPasswordC(new String(vista.pasPasswordC.getPassword()).trim());
+            modelo.setAge((int) vista.spnAge.getValue());
+
+            // Validar datos
+            if (modelo.Validate()) {
+                JOptionPane.showMessageDialog(vista, "Corrige los errores antes de continuar");
+                return;
+            }
+
+            // Guardar en la base de datos si los datos son válidos
+            if (modelo.save()) {
+                JOptionPane.showMessageDialog(vista, "Registro exitoso");
+                limpiarCampos();
+                btnLogin();
+            } else {
+                JOptionPane.showMessageDialog(vista, "Error al guardar en la base de datos");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(vista, "Error inesperado: " + e.getMessage());
+        }
     }
-    
+
+// Limpiar campos después de un registro exitoso
+    private void limpiarCampos() {
+        vista.txtName.setText("");
+        vista.txtDni.setText("");
+        vista.txtnumPhone.setText("");
+        vista.txtEmail.setText("");
+        vista.pasPassword.setText("");
+        vista.pasPasswordC.setText("");
+        vista.spnAge.setValue(16);
+    }
+
+    private void btnLogin() {
+        System.out.println("ok");
+        // Configurar vista de inicio de sesión
+        IniciarSesion vistaLogin = new IniciarSesion();
+        ModeloIniciarSesion modeloLogin = new ModeloIniciarSesion();
+        ControladorIniciarSesion controlLogin = new ControladorIniciarSesion(vistaLogin, modeloLogin);
+        controlLogin.starView();
+        vista.setVisible(false);
+
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource() == registroClientes.btnRegister){
-            saveClient();
-        }else if(e.getSource() == registroClientes.btnLogin){
-            login();
+        if (e.getSource() == vista.BtnLogin) {
+            btnLogin();
+        } else if (e.getSource() == vista.BtnRegister) {
+            btnRegister();
         }
     }
 }
