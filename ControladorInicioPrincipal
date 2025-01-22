@@ -1,0 +1,117 @@
+package Controller;
+
+import Connection.ConnectionMongo;
+import Model.ModeloIniciarSesion;
+import Model.ModeloInicioPrincipal;
+import Model.Usuario;
+import View.IniciarSesion;
+import View.InicioPrincipal;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import org.bson.Document;
+
+public class ControladorInicioPrincipal implements ActionListener {
+
+    private InicioPrincipal vista;
+    private ModeloInicioPrincipal modelo;
+    private ConnectionMongo mongo = new ConnectionMongo();
+    private Usuario usuarioActual;
+
+    public ControladorInicioPrincipal(InicioPrincipal vista, ModeloInicioPrincipal modelo) {
+        this.vista = vista;
+        this.modelo = modelo;
+        mongo.createConecction();
+
+        this.vista.BtnBuy.addActionListener(this);
+        this.vista.BtnLogin.addActionListener(this);
+        this.vista.BtnSearch.addActionListener(this);
+    }
+
+    public InicioPrincipal getVista() {
+        return vista;
+    }
+
+    public void starView() {
+        vista.setVisible(true);
+        cargarTablas();
+        vista.TxtDea.setEditable(false);
+        vista.TxtIngr.setEditable(false);
+    }
+
+    public void cargarTablas() {
+        DefaultTableModel tablaCombinada = mongo.cargarTablaCombinada();
+        vista.TbtDestinos.setModel(tablaCombinada);
+    }
+
+    public void btnFind() {
+        // Implementar lógica de búsqueda si es necesario
+    }
+
+    public void btnLogin() {
+
+        IniciarSesion vistaLogin = new IniciarSesion();
+        ModeloIniciarSesion modeloLogin = new ModeloIniciarSesion();
+        ControladorIniciarSesion controlLogin = new ControladorIniciarSesion(vistaLogin, modeloLogin);
+        controlLogin.setControladorPrincipal(this);
+        controlLogin.starView();
+        vista.setVisible(false);
+    }
+
+    public boolean verifySession() {
+        return usuarioActual != null && modelo.verifYSession(usuarioActual.getEmail());
+    }
+
+    public void btnBuy() {
+        if (verifySession()) {
+            JOptionPane.showMessageDialog(null, "Debe iniciar sesión antes de comprar", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            btnLogin();
+            return;
+        }
+
+        // Verificar si se ha seleccionado una fila en la tabla
+        int filaSeleccionada = vista.TbtDestinos.getSelectedRow();
+        if (filaSeleccionada == -1) {
+            JOptionPane.showMessageDialog(null, "Debe seleccionar un destino en la tabla", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String destino = (String) vista.TbtDestinos.getValueAt(filaSeleccionada, 0); // Obtener el destino de la fila seleccionada
+        int cantidadBoletos = 0;
+        try {
+            cantidadBoletos = (Integer) vista.SpBoletos.getValue();
+        } catch (ClassCastException e) {
+            JOptionPane.showMessageDialog(null, "La cantidad de boletos seleccionada es inválida", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        modelo.setTickets(cantidadBoletos);
+        modelo.setTravel(destino);
+        boolean band = modelo.validarDatos(vista);
+        if (!band) {
+            double precioUnitario = (Double) vista.TbtDestinos.getValueAt(filaSeleccionada, 9);
+            double totalAPagar = precioUnitario * modelo.getTickets();
+            JOptionPane.showMessageDialog(null, "Total a pagar: $" + modelo.precioBoleto(), "Resumen de Compra", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            System.out.println("Campos inválidos");
+        }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == vista.BtnSearch) {
+            btnFind();
+        }
+        if (e.getSource() == vista.BtnBuy) {
+            btnBuy();
+        }
+        if (e.getSource() == vista.BtnLogin) {
+            btnLogin();
+        }
+    }
+
+    public void setUsuarioActual(Usuario usuarioActual) {
+        this.usuarioActual = usuarioActual;
+    }
+}
